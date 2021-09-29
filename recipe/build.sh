@@ -7,3 +7,5 @@ if [[ "${target_platform}" == osx-* ]]; then
   export CXXFLAGS="${CXXFLAGS} -isysroot ${CONDA_BUILD_SYSROOT}"
   export LDFLAGS="${LDFLAGS} -isysroot ${CONDA_BUILD_SYSROOT}"i
 fi
+
+${PYTHON} -m pip install . --no-deps -vv

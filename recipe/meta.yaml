@@ -13,8 +13,6 @@ source:
 
 build:
   number: 0
-  script: {{ PYTHON }} -m pip install . --no-deps -vv  # [not win]
-  script: '"%RECIPE_DIR%\windows.bat" "{{ PYTHON }}"'  # [win]
   skip: true   #[ppc64le]
 
 
