@@ -1,3 +1,5 @@
+if "%ARCH%" == "32" (set PLATFORM=x86) else (set PLATFORM=x64)
+
 set "BAZEL_VC=%VSINSTALLDIR%VC"
 set "BAZEL_VS=%VSINSTALLDIR%"
 
