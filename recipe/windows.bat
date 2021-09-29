@@ -1,3 +1,5 @@
+set "BAZEL_VC=%VSINSTALLDIR%VC"
+set "BAZEL_VS=%VSINSTALLDIR%"
 "%1" setup.py install
 rem remember the return code
 set RETCODE=%ERRORLEVEL%
