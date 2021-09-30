@@ -1,0 +1,12 @@
+diff --git a/setup.py b/setup.py
+index 85d4a17..b7e1145 100644
+--- a/setup.py
++++ b/setup.py
+@@ -100,6 +100,7 @@ class BuildBazelExtension(build_ext.build_ext):
+         ext.bazel_target,
+         '--symlink_prefix=' + os.path.join(self.build_temp, 'bazel-'),
+         '--compilation_mode=' + ('dbg' if self.debug else 'opt'),
++        '--cxxopt=-isysroot' + os.environ['CONDA_BUILD_SYSROOT'],
+     ]
+ 
+     if IS_WINDOWS:
