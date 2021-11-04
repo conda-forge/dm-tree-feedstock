@@ -12,7 +12,7 @@ source:
     - patches/0001-Contain-bazel-root.patch
 
 build:
-  number: 2
+  number: 3
   script: {{ PYTHON }} -m pip install . --no-deps -vv  # [not win]
   script: '"%RECIPE_DIR%\windows.bat" "{{ PYTHON }}"'  # [win]
 
