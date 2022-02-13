@@ -23,7 +23,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - python
-    - bazel <4
+    - bazel
     - m2-patch  # [win]
   host:
     - pip
