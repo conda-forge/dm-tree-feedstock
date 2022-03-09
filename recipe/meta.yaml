@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://github.com/deepmind/tree/archive/{{ version }}.tar.gz
+  url: https://github.com/deepmind/tree/archive/refs/tags/{{ version }}.tar.gz
   sha256: 6776404b23b4522c01012ffb314632aba092c9541577004ab153321e87da439a
   patches:
     - patches/0001-Internal-change.patch
