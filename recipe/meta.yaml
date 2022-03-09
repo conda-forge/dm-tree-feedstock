@@ -6,10 +6,12 @@ package:
   version: {{ version }}
 
 source:
-  url: https://github.com/deepmind/tree/archive/master.tar.gz
-  sha256: d69fff03cfa42f6bd86d1dbc6a8d2dd5b2af3fde312c861824070766926de0f8
-#   patches:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
+  sha256: 6776404b23b4522c01012ffb314632aba092c9541577004ab153321e87da439a
+  patches:
 #     - patches/0001-Contain-bazel-root.patch
+    - patches/upstream-pr-58.patch
+    - patches/upstream-pr-72.patch
 
 build:
   number: 1
