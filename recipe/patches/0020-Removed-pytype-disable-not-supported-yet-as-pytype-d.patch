@@ -1,0 +1,38 @@
+From bd0f9102e1816d2d221822ac9508511cc2bf3b28 Mon Sep 17 00:00:00 2001
+From: Sergei Lebedev <slebedev@google.com>
+Date: Mon, 7 Mar 2022 06:09:56 -0800
+Subject: [PATCH 20/20] Removed pytype: disable=not-supported-yet as pytype
+ does support recursive types now
+
+PiperOrigin-RevId: 432926559
+---
+ tree/__init__.py | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/tree/__init__.py b/tree/__init__.py
+index cf389b4..5bfb89c 100644
+--- a/tree/__init__.py
++++ b/tree/__init__.py
+@@ -90,17 +90,16 @@ _IF_SHALLOW_IS_SEQ_INPUT_MUST_BE_SEQ = (
+ 
+ K = TypeVar("K")
+ V = TypeVar("V")
++
+ # A generic monomorphic structure type, e.g. ``StructureKV[Text, int]``
+ # is an arbitrarily nested structure where keys must be of type ``Text``
+ # and values are integers.
+-# pytype: disable=not-supported-yet
+-# TODO(b/146184840): Remove disable= when pytype supports recursive types.
+ StructureKV = Union[
+     Sequence["StructureKV[K, V]"],
+     Mapping[K, "StructureKV[K, V]"],
+     V,
+ ]
+-# pytype: enable=not-supported-yet
++
+ # A specialization of ``StructureKV`` for the common case of ``Text`` keys.
+ try:
+   Structure = StructureKV[Text, V]
+-- 
+2.25.1
+

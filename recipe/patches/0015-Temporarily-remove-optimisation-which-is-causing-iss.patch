@@ -1,0 +1,29 @@
+From f2c4f875e06834228a76c481dfaef1f550a01040 Mon Sep 17 00:00:00 2001
+From: Gregory Thornton <gregthornton@google.com>
+Date: Mon, 12 Jul 2021 02:35:08 -0700
+Subject: [PATCH 15/20] Temporarily remove optimisation which is causing
+ issues.
+
+PiperOrigin-RevId: 384192403
+---
+ tree/tree.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tree/tree.cc b/tree/tree.cc
+index 4db60f8..33922ea 100644
+--- a/tree/tree.cc
++++ b/tree/tree.cc
+@@ -174,8 +174,8 @@ py::object GetWraptObjectProxyTypeUncached() {
+ }
+ 
+ py::object GetWraptObjectProxyType() {
+-  static py::object type = GetWraptObjectProxyTypeUncached();
+-  return type;
++  // TODO(gregthornton): Restore caching when deadlock issue is fixed.
++  return GetWraptObjectProxyTypeUncached();
+ }
+ 
+ // Returns 1 if `o` is considered a mapping for the purposes of Flatten().
+-- 
+2.25.1
+

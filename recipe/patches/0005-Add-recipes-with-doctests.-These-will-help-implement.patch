@@ -1,0 +1,113 @@
+From b8b50c04c2de17fb92077354cf58579ca2032bbb Mon Sep 17 00:00:00 2001
+From: Rishabh Kabra <rkabra@google.com>
+Date: Tue, 22 Jun 2021 03:26:14 -0700
+Subject: [PATCH 05/20] Add recipes with doctests. These will help implement
+ common use cases using our API.
+
+PiperOrigin-RevId: 380771369
+---
+ docs/conf.py     |  9 +++++++++
+ docs/index.rst   |  1 +
+ docs/recipes.rst | 29 +++++++++++++++++++++++++++++
+ tree/BUILD       |  4 ++--
+ 4 files changed, 41 insertions(+), 2 deletions(-)
+ create mode 100644 docs/recipes.rst
+
+diff --git a/docs/conf.py b/docs/conf.py
+index c1b18a5..1e043f7 100644
+--- a/docs/conf.py
++++ b/docs/conf.py
+@@ -52,6 +52,7 @@ extensions = [
+     'sphinx.ext.autosummary',
+     'sphinx.ext.linkcode',
+     'sphinx.ext.napoleon',
++    'sphinx.ext.doctest'
+ ]
+ 
+ # Add any paths that contain templates here, relative to this directory.
+@@ -82,6 +83,14 @@ html_theme_options = {
+     # 'sticky_navigation': False,
+ }
+ 
++# -- Options for doctest -----------------------------------------------------
++
++doctest_global_setup = '''
++import collections
++import numpy as np
++import tree
++'''
++
+ # -- Source code links -------------------------------------------------------
+ 
+ 
+diff --git a/docs/index.rst b/docs/index.rst
+index 684aaa5..c507d09 100644
+--- a/docs/index.rst
++++ b/docs/index.rst
+@@ -8,6 +8,7 @@ Tree Documentation
+ 
+    api
+    changes
++   recipes
+ 
+ ``tree`` is a library for working with nested data structures. In a way,
+ ``tree`` generalizes the builtin :func:`map` function which only supports 
+diff --git a/docs/recipes.rst b/docs/recipes.rst
+new file mode 100644
+index 0000000..346072e
+--- /dev/null
++++ b/docs/recipes.rst
+@@ -0,0 +1,29 @@
++############
++Recipes
++############
++
++
++Concatenate nested array structures
++===================================
++>>> tree.map_structure(lambda *args: np.concatenate(args, axis=1),
++...                                   {'a': np.ones((2, 1))},
++...                                   {'a': np.zeros((2, 1))})
++{'a': array([[1., 0.],
++       [1., 0.]])}
++
++>>> tree.map_structure(lambda *args: np.concatenate(args, axis=0),
++...                                   {'a': np.ones((2, 1))},
++...                                   {'a': np.zeros((2, 1))})
++{'a': array([[1.],
++       [1.],
++       [0.],
++       [0.]])}
++
++
++Exclude "meta" keys while mapping across structures
++===================================================
++>>> d1 = {'key_to_exclude': None, 'a': 1}
++>>> d2 = {'key_to_exclude': None, 'a': 2}
++>>> d3 = {'a': 3}
++>>> tree.map_structure_up_to({'a': True}, lambda x, y, z: x+y+z, d1, d2, d3)
++{'a': 6}
+diff --git a/tree/BUILD b/tree/BUILD
+index 0ae5f97..5a9a47f 100644
+--- a/tree/BUILD
++++ b/tree/BUILD
+@@ -20,7 +20,7 @@ py_library(
+     srcs_version = "PY2AND3",
+     visibility = ["//visibility:public"],
+     deps = [
+-        ":_tree",
++        ":_tree",  # build_cleaner:keep
+     ],
+ )
+ 
+@@ -75,6 +75,6 @@ py_library(
+         ":compat_users",
+     ],
+     deps = [
+-        ":tree",
++        ":tree",  # build_cleaner:keep
+     ],
+ )
+-- 
+2.25.1
+

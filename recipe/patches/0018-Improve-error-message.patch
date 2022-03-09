@@ -1,0 +1,30 @@
+From b863fce05e3461730a0ade8a33319fce1e7bab66 Mon Sep 17 00:00:00 2001
+From: Tree Contributor <noreply@google.com>
+Date: Wed, 23 Feb 2022 11:50:44 -0800
+Subject: [PATCH 18/20] Improve error message.
+
+PiperOrigin-RevId: 430504390
+---
+ tree/sequence.py | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/tree/sequence.py b/tree/sequence.py
+index f4fe942..55e0b66 100644
+--- a/tree/sequence.py
++++ b/tree/sequence.py
+@@ -90,7 +90,11 @@ def _sequence_like(instance, args):
+       instance_type = type(instance.__wrapped__)
+     else:
+       instance_type = type(instance)
+-    return instance_type(*args)
++    try:
++      return instance_type(*args)
++    except Exception as e:
++      raise TypeError(
++          f"Couldn't traverse {instance!r} with arguments {args}") from e
+   elif isinstance(instance, ObjectProxy):
+     # For object proxies, first create the underlying type and then re-wrap it
+     # in the proxy type.
+-- 
+2.25.1
+

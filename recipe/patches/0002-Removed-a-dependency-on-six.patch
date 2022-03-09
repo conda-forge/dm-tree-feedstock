@@ -1,0 +1,59 @@
+From 23b9aefa2102330c9ca02e0ff07e55c202a74272 Mon Sep 17 00:00:00 2001
+From: Sergei Lebedev <slebedev@google.com>
+Date: Mon, 12 Apr 2021 08:06:00 -0700
+Subject: [PATCH 02/20] Removed a dependency on six
+
+It is no longer needed since we have dropped support for 2.X.
+
+PiperOrigin-RevId: 368004371
+---
+ readthedocs.yml       | 1 -
+ requirements-test.txt | 3 +--
+ requirements.txt      | 1 -
+ setup.py              | 1 -
+ 4 files changed, 1 insertion(+), 5 deletions(-)
+ delete mode 100644 requirements.txt
+
+diff --git a/readthedocs.yml b/readthedocs.yml
+index b0195b2..15ce2e9 100644
+--- a/readthedocs.yml
++++ b/readthedocs.yml
+@@ -11,5 +11,4 @@ sphinx:
+ python:
+   version: 3.7
+   install:
+-  - requirements: requirements.txt
+   - requirements: docs/requirements.txt
+diff --git a/requirements-test.txt b/requirements-test.txt
+index 79fe359..da0ba25 100644
+--- a/requirements-test.txt
++++ b/requirements-test.txt
+@@ -1,5 +1,4 @@
+ absl-py>=0.6.1
+ attrs>=18.2.0
+-# TODO(slebedev): remove the upper bound once 2.7 support is dropped.
+-numpy>=1.15.4,<1.17.0
++numpy>=1.15.4
+ wrapt>=1.11.2
+diff --git a/requirements.txt b/requirements.txt
+deleted file mode 100644
+index dde46af..0000000
+--- a/requirements.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-six>=1.12.0
+diff --git a/setup.py b/setup.py
+index 4e1054a..28e560b 100644
+--- a/setup.py
++++ b/setup.py
+@@ -126,7 +126,6 @@ setuptools.setup(
+     long_description_content_type='text/markdown',
+     # Contained modules and scripts.
+     packages=setuptools.find_packages(),
+-    install_requires=_parse_requirements('requirements.txt'),
+     tests_require=_parse_requirements('requirements-test.txt'),
+     test_suite='tree',
+     cmdclass=dict(build_ext=BuildBazelExtension),
+-- 
+2.25.1
+

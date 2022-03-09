@@ -1,0 +1,30 @@
+From 393cc3777eda62b3cfd5012e43d3470434566159 Mon Sep 17 00:00:00 2001
+From: Sergei Lebedev <slebedev@google.com>
+Date: Mon, 26 Apr 2021 13:38:47 -0700
+Subject: [PATCH 03/20] Internal change
+
+PiperOrigin-RevId: 370531393
+---
+ tree/BUILD | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/tree/BUILD b/tree/BUILD
+index a457e14..0ae5f97 100644
+--- a/tree/BUILD
++++ b/tree/BUILD
+@@ -78,12 +78,3 @@ py_library(
+         ":tree",
+     ],
+ )
+-
+-tree_py_test(
+-    name = "compat_test",
+-    srcs = [],  # compat_test.py
+-    deps = [
+-        ":compat",
+-        # util_nest_test_main_lib,
+-    ],
+-)
+-- 
+2.25.1
+

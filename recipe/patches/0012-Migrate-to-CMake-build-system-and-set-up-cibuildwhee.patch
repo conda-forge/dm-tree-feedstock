@@ -1,0 +1,792 @@
+From 68abd803cb67f7c2c9b74b42d68a898fa7645b06 Mon Sep 17 00:00:00 2001
+From: Iurii Kemaev <iukemaev@google.com>
+Date: Sat, 26 Jun 2021 14:51:03 -0700
+Subject: [PATCH 12/20] Migrate to CMake build system and set up cibuildwheels
+ workflow.
+
+PiperOrigin-RevId: 381667255
+---
+ .github/workflows/build_wheels.yml |  65 ++++++++++++++++
+ .github/workflows/ci.yml           |   6 +-
+ MANIFEST.in                        |  10 ++-
+ README.md                          |  14 +++-
+ WORKSPACE                          |  36 ---------
+ bazel/BUILD                        |  38 ---------
+ external/BUILD                     |   7 --
+ external/pybind11.BUILD            |  23 ------
+ external/python_headers.BUILD      |   9 ---
+ setup.py                           | 119 +++++++++++++----------------
+ tree/BUILD                         |  88 ---------------------
+ tree/CMakeLists.txt                | 113 +++++++++++++++++++++++++++
+ tree/build_defs.bzl                |  39 ----------
+ tree/tree.cc                       |   4 +-
+ tree/tree.h                        |   3 +-
+ 15 files changed, 258 insertions(+), 316 deletions(-)
+ create mode 100644 .github/workflows/build_wheels.yml
+ delete mode 100644 WORKSPACE
+ delete mode 100644 bazel/BUILD
+ delete mode 100644 external/BUILD
+ delete mode 100644 external/pybind11.BUILD
+ delete mode 100644 external/python_headers.BUILD
+ delete mode 100644 tree/BUILD
+ create mode 100644 tree/CMakeLists.txt
+ delete mode 100644 tree/build_defs.bzl
+
+diff --git a/.github/workflows/build_wheels.yml b/.github/workflows/build_wheels.yml
+new file mode 100644
+index 0000000..c9e787d
+--- /dev/null
++++ b/.github/workflows/build_wheels.yml
+@@ -0,0 +1,65 @@
++name: build_wheels
++
++on:
++ # push:
++ #   branches: [ master ]
++ # pull_request:
++ #   branches: [ master ]
++ release:
++    types: [created]
++
++jobs:
++  build_wheels:
++    name: Build wheels on ${{ matrix.os }}
++    runs-on: ${{ matrix.os }}
++    strategy:
++      matrix:
++        os: [windows-latest, ubuntu-latest, macos-latest]
++    env:
++      CIBW_PROJECT_REQUIRES_PYTHON: ">=3.6"
++      OS: ${{ matrix.os }}
++
++    steps:
++      - uses: actions/checkout@v2
++      - uses: actions/setup-python@v2
++
++      - name: Install
++        run: |
++          set -xe
++          pwd
++          python --version
++          python -m pip install --upgrade pip setuptools wheel
++          python -m pip install cibuildwheel
++        shell: bash
++
++      - name: Build wheels (macosx & win)
++        if: ${{ matrix.os != 'ubuntu-latest' }}
++        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
++        env:
++          CIBW_BUILD: "cp3*-win* cp3*-macosx*"
++          CIBW_SKIP: "*-win32"
++        shell: bash
++
++      - name: Build wheels (manylinux_2_24)
++        if: ${{ matrix.os == 'ubuntu-latest' }}
++        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
++        env:
++          CIBW_BUILD: cp3*-manylinux*
++          CIBW_SKIP: "*-manylinux_i686"
++          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_24
++          CIBW_MANYLINUX_PYPY_X86_64_IMAGE: manylinux_2_24
++        shell: bash
++
++      - name: Build wheels (manylinux2014)
++        if: ${{ matrix.os == 'ubuntu-latest' }}
++        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
++        env:
++          CIBW_BUILD: cp3*-manylinux*
++          CIBW_SKIP: "*-manylinux_i686"
++          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
++          CIBW_MANYLINUX_PYPY_X86_64_IMAGE: manylinux2014
++        shell: bash
++
++      - name: List wheels
++        run: set -xe && ls -la wheelhouse
++        shell: bash
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1a07154..0962ef7 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -1,4 +1,3 @@
+----
+ name: ci
+ 
+ on:
+@@ -18,11 +17,11 @@ jobs:
+     strategy:
+       matrix:
+         python-version: ["3.6", "3.7", "3.8", "3.9"]
+-        os: [macos-latest, ubuntu-latest, windows-latest]
++        os: [windows-latest, ubuntu-latest, macos-latest]
+ 
+     steps:
+       - uses: "actions/checkout@v2"
+-      - uses: "actions/setup-python@v1"
++      - uses: "actions/setup-python@v2"
+         with:
+             python-version: "${{ matrix.python-version }}"
+       - name: "Install dependencies"
+@@ -40,7 +39,6 @@ jobs:
+           fi
+           set -xe
+           python -VV
+-          bazel --version
+           python setup.py sdist
+           pip wheel --verbose --no-deps --no-clean dist/dm-tree*.tar.gz
+           pip install dm_tree*.whl
+diff --git a/MANIFEST.in b/MANIFEST.in
+index 5eec683..c49826b 100644
+--- a/MANIFEST.in
++++ b/MANIFEST.in
+@@ -1,9 +1,11 @@
++# metadata
+ include LICENSE
+ include WORKSPACE
+ include CONTRIBUTING.md
+ include README.md
++
++# python package requirements
+ include requirements*.txt
+-recursive-include . *BUILD
+-recursive-include . *.bzl
+-recursive-include . *.h
+-recursive-include . *.cc
++
++# tree files
++recursive-include . CMakeLists.txt *.cc *.cpp *.h *.sh *.py *.cmake
+diff --git a/README.md b/README.md
+index cad0d3b..548c33d 100644
+--- a/README.md
++++ b/README.md
+@@ -19,12 +19,24 @@ demanding applications, such as machine learning models.
+ 
+ ## Installation
+ 
+-Install `tree` by running:
++From PyPI:
+ 
+ ```shell
+ $ pip install dm-tree
+ ```
+ 
++Directly from github using pip:
++
++```shell
++$ pip install git+git://github.com/deepmind/tree.git
++```
++
++Build from source:
++
++```shell
++$ python setup.py install
++```
++
+ ## Support
+ 
+ If you are having issues, please let us know by filing an issue on our
+diff --git a/WORKSPACE b/WORKSPACE
+deleted file mode 100644
+index 800fa3f..0000000
+--- a/WORKSPACE
++++ /dev/null
+@@ -1,36 +0,0 @@
+-workspace(name = "tree")
+-
+-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+-
+-http_archive(
+-    name = "bazel_skylib",
+-    sha256 = "a8677c64e2a58eb113f305784e6af9759cfa3f9a6eacb4d40531fe1bd6356aca",
+-    strip_prefix = "bazel-skylib-0.9.0",
+-    url = "https://github.com/bazelbuild/bazel-skylib/archive/0.9.0.zip",
+-)
+-
+-http_archive(
+-    name = "com_google_absl",
+-    sha256 = "583e5801372a0bb12eb561858532e3bb9a3528f15f65cfc87b2c0f4c1ab1a0ca",
+-    strip_prefix = "abseil-cpp-111ca7060a6ff50115ca85b59f6b5d8c8c5e9105",
+-    urls = [
+-        "https://mirror.bazel.build/github.com/abseil/abseil-cpp/archive/111ca7060a6ff50115ca85b59f6b5d8c8c5e9105.tar.gz",
+-        "https://github.com/abseil/abseil-cpp/archive/111ca7060a6ff50115ca85b59f6b5d8c8c5e9105.tar.gz",
+-    ],
+-)
+-
+-http_archive(
+-    name = "pybind11_archive",
+-    build_file = "pybind11.BUILD",
+-    sha256 = "1eed57bc6863190e35637290f97a20c81cfe4d9090ac0a24f3bbf08f265eb71d",
+-    strip_prefix = "pybind11-2.4.3",
+-    urls = [
+-        "https://github.com/pybind/pybind11/archive/v2.4.3.tar.gz",
+-    ],
+-)
+-
+-new_local_repository(
+-    name = "python_headers",
+-    build_file = "external/python_headers.BUILD",
+-    path = "/usr/include/python2.7",  # May be overwritten by setup.py.
+-)
+diff --git a/bazel/BUILD b/bazel/BUILD
+deleted file mode 100644
+index cb699b1..0000000
+--- a/bazel/BUILD
++++ /dev/null
+@@ -1,38 +0,0 @@
+-# Copyright 2019 DeepMind Technologies Limited.
+-#
+-# Licensed under the Apache License, Version 2.0 (the "License");
+-# you may not use this file except in compliance with the License.
+-# You may obtain a copy of the License at
+-#
+-#    http://www.apache.org/licenses/LICENSE-2.0
+-#
+-# Unless required by applicable law or agreed to in writing, software
+-# distributed under the License is distributed on an "AS IS" BASIS,
+-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-# See the License for the specific language governing permissions and
+-# limitations under the License.
+-# ============================================================================
+-#
+-# Description:
+-#   Helpers for setting up Bazel build environment.
+-
+-package(
+-    default_visibility = ["//:__subpackages__"],
+-)
+-
+-licenses(["notice"])  # Apache 2.0 License
+-
+-config_setting(
+-    name = "linux",
+-    constraint_values = ["@bazel_tools//platforms:linux"],
+-)
+-
+-config_setting(
+-    name = "apple",
+-    constraint_values = ["@bazel_tools//platforms:osx"],
+-)
+-
+-config_setting(
+-    name = "windows",
+-    constraint_values = ["@bazel_tools//platforms:windows"],
+-)
+diff --git a/external/BUILD b/external/BUILD
+deleted file mode 100644
+index 49ef737..0000000
+--- a/external/BUILD
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Description:
+-#   Bazel BUILD rules for external repositories.
+-#   Exported here for reuse by other Bazel projects that import _this_ project.
+-
+-licenses(["notice"])
+-
+-exports_files(glob(["*.BUILD"]))
+diff --git a/external/pybind11.BUILD b/external/pybind11.BUILD
+deleted file mode 100644
+index ad05daa..0000000
+--- a/external/pybind11.BUILD
++++ /dev/null
+@@ -1,23 +0,0 @@
+-# Description:
+-#   Build rule for pybind11 2.2.4.
+-
+-cc_library(
+-    name = "pybind11",
+-    hdrs = glob(
+-        include = [
+-            "include/pybind11/*.h",
+-            "include/pybind11/detail/*.h",
+-        ],
+-        exclude = [
+-            "include/pybind11/common.h",
+-            "include/pybind11/eigen.h",
+-        ],
+-    ),
+-    copts = [
+-        "-fexceptions",
+-        "-Wno-undefined-inline",
+-        "-Wno-pragma-once-outside-header",
+-    ],
+-    includes = ["include"],
+-    visibility = ["//visibility:public"],
+-)
+diff --git a/external/python_headers.BUILD b/external/python_headers.BUILD
+deleted file mode 100644
+index 0bfebe9..0000000
+--- a/external/python_headers.BUILD
++++ /dev/null
+@@ -1,9 +0,0 @@
+-# Description:
+-#   Build rule for Python headers.
+-
+-cc_library(
+-    name = "python_headers",
+-    hdrs = glob(["**/*.h"]),
+-    includes = ["."],
+-    visibility = ["//visibility:public"],
+-)
+diff --git a/setup.py b/setup.py
+index 28e560b..7063f42 100644
+--- a/setup.py
++++ b/setup.py
+@@ -13,33 +13,23 @@
+ # limitations under the License.
+ # ==============================================================================
+ """Setup for pip package."""
+-from __future__ import absolute_import
+-from __future__ import division
+-from __future__ import print_function
+ 
+ import os
+-import posixpath
+-import re
+ import shutil
++import subprocess
+ import sys
+ 
+-from distutils import sysconfig
+ import setuptools
+ from setuptools.command import build_ext
+ 
+-
+ here = os.path.dirname(os.path.abspath(__file__))
+ 
+ 
+-IS_WINDOWS = sys.platform.startswith('win')
+-
+-
+ def _get_tree_version():
+   """Parse the version string from tree/__init__.py."""
+   with open(os.path.join(here, 'tree', '__init__.py')) as f:
+     try:
+-      version_line = next(
+-          line for line in f if line.startswith('__version__'))
++      version_line = next(line for line in f if line.startswith('__version__'))
+     except StopIteration:
+       raise ValueError('__version__ not defined in tree/__init__.py')
+     else:
+@@ -56,63 +46,64 @@ def _parse_requirements(path):
+     ]
+ 
+ 
+-class BazelExtension(setuptools.Extension):
+-  """A C/C++ extension that is defined as a Bazel BUILD target."""
++class CMakeExtension(setuptools.Extension):
++  """An extension with no sources.
+ 
+-  def __init__(self, bazel_target):
+-    self.bazel_target = bazel_target
+-    self.relpath, self.target_name = (
+-        posixpath.relpath(bazel_target, '//').split(':'))
+-    ext_name = os.path.join(
+-        self.relpath.replace(posixpath.sep, os.path.sep), self.target_name)
+-    setuptools.Extension.__init__(self, ext_name, sources=[])
++  We do not want distutils to handle any of the compilation (instead we rely
++  on CMake), so we always pass an empty list to the constructor.
++  """
+ 
++  def __init__(self, name, source_dir=''):
++    super().__init__(name, sources=[])
++    self.source_dir = os.path.abspath(source_dir)
+ 
+-class BuildBazelExtension(build_ext.build_ext):
+-  """A command that runs Bazel to build a C/C++ extension."""
+ 
+-  def run(self):
+-    for ext in self.extensions:
+-      self.bazel_build(ext)
+-    build_ext.build_ext.run(self)
+-
+-  def bazel_build(self, ext):
+-    with open('WORKSPACE', 'r') as f:
+-      workspace_contents = f.read()
+-
+-    with open('WORKSPACE', 'w') as f:
+-      f.write(re.sub(
+-          r'(?<=path = ").*(?=",  # May be overwritten by setup\.py\.)',
+-          sysconfig.get_python_inc().replace(os.path.sep, posixpath.sep),
+-          workspace_contents))
+-
+-    if not os.path.exists(self.build_temp):
+-      os.makedirs(self.build_temp)
+-
+-    bazel_argv = [
+-        'bazel',
+-        'build',
+-        ext.bazel_target,
+-        '--symlink_prefix=' + os.path.join(self.build_temp, 'bazel-'),
+-        '--compilation_mode=' + ('dbg' if self.debug else 'opt'),
+-    ]
++class BuildCMakeExtension(build_ext.build_ext):
++  """Our custom build_ext command.
+ 
+-    if IS_WINDOWS:
+-      # Link with python*.lib.
+-      for library_dir in self.library_dirs:
+-        bazel_argv.append('--linkopt=/LIBPATH:' + library_dir)
++  Uses CMake to build extensions instead of a bare compiler (e.g. gcc, clang).
++  """
+ 
+-    self.spawn(bazel_argv)
++  def run(self):
++    self._check_build_environment()
++    for ext in self.extensions:
++      self.build_extension(ext)
+ 
+-    shared_lib_suffix = '.dll' if IS_WINDOWS else '.so'
+-    ext_bazel_bin_path = os.path.join(
+-        self.build_temp, 'bazel-bin',
+-        ext.relpath, ext.target_name + shared_lib_suffix)
+-    ext_dest_path = self.get_ext_fullpath(ext.name)
+-    ext_dest_dir = os.path.dirname(ext_dest_path)
+-    if not os.path.exists(ext_dest_dir):
+-      os.makedirs(ext_dest_dir)
+-    shutil.copyfile(ext_bazel_bin_path, ext_dest_path)
++  def _check_build_environment(self):
++    """Check for required build tools: CMake, C++ compiler, and python dev."""
++    try:
++      subprocess.check_call(['cmake', '--version'])
++    except OSError as e:
++      ext_names = ', '.join(e.name for e in self.extensions)
++      raise RuntimeError(
++          f'CMake must be installed to build the following extensions: {ext_names}'
++      ) from e
++    print('Found CMake')
++
++  def build_extension(self, ext):
++    extension_dir = os.path.abspath(
++        os.path.dirname(self.get_ext_fullpath(ext.name)))
++    build_cfg = 'Debug' if self.debug else 'Release'
++    cmake_args = [
++        f'-DPython3_EXECUTABLE={sys.executable}',
++        f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extension_dir}',
++        f'-DCMAKE_BUILD_TYPE={build_cfg}'
++    ]
++    os.makedirs(self.build_temp, exist_ok=True)
++    subprocess.check_call(
++        ['cmake', ext.source_dir] + cmake_args, cwd=self.build_temp)
++    subprocess.check_call(
++        ['cmake', '--build', '.', f'-j{os.cpu_count()}', '--config', build_cfg],
++        cwd=self.build_temp)
++
++    # Force output to <extension_dir>/. Amends CMake multigenerator output paths
++    # on Windows and avoids Debug/ and Release/ subdirs, which is CMake default.
++    tree_dir = os.path.join(extension_dir, 'tree')  # pylint:disable=unreachable
++    for cfg in ('Release', 'Debug'):
++      cfg_dir = os.path.join(extension_dir, cfg)
++      if os.path.isdir(cfg_dir):
++        for f in os.listdir(cfg_dir):
++          shutil.move(os.path.join(cfg_dir, f), tree_dir)
+ 
+ 
+ setuptools.setup(
+@@ -128,8 +119,8 @@ setuptools.setup(
+     packages=setuptools.find_packages(),
+     tests_require=_parse_requirements('requirements-test.txt'),
+     test_suite='tree',
+-    cmdclass=dict(build_ext=BuildBazelExtension),
+-    ext_modules=[BazelExtension('//tree:_tree')],
++    cmdclass=dict(build_ext=BuildCMakeExtension),
++    ext_modules=[CMakeExtension('_tree', source_dir='tree')],
+     zip_safe=False,
+     # PyPI package information.
+     classifiers=[
+diff --git a/tree/BUILD b/tree/BUILD
+deleted file mode 100644
+index d2a483f..0000000
+--- a/tree/BUILD
++++ /dev/null
+@@ -1,88 +0,0 @@
+-# Description:
+-#   Tree provides utilities for working with nested data structures.
+-# load_pybind_extension
+-load(
+-    "//tree:build_defs.bzl",
+-    "COMPAT_USERS",
+-    "tree_py_extension",
+-    "tree_py_test",
+-)
+-
+-package(default_visibility = ["//visibility:private"])
+-
+-licenses(["notice"])
+-
+-exports_files(["LICENSE"])
+-
+-py_library(
+-    name = "tree",
+-    srcs = ["__init__.py"],
+-    srcs_version = "PY2AND3",
+-    visibility = ["//visibility:public"],
+-    deps = [
+-        ":_tree",  # build_cleaner:keep
+-        ":sequence",
+-    ],
+-)
+-
+-tree_py_extension(
+-    name = "_tree",
+-    srcs = ["tree.cc"],
+-    hdrs = ["tree.h"],
+-    copts = [
+-        "-fexceptions",
+-        "-fno-strict-aliasing",
+-    ],
+-    features = ["-use_header_modules"],
+-    deps = [
+-        # base,
+-        "@com_google_absl//absl/memory",
+-        "@com_google_absl//absl/strings",
+-        "@pybind11_archive//:pybind11",
+-        "@python_headers",
+-    ],
+-)
+-
+-py_library(
+-    name = "sequence",
+-    srcs = ["sequence.py"],
+-    srcs_version = "PY2AND3",
+-    deps = [":_tree"],
+-)
+-
+-tree_py_test(
+-    name = "tree_test",
+-    srcs = ["tree_test.py"],
+-    deps = [
+-        ":tree",
+-        # absl/testing:parameterized
+-        # attr
+-        # numpy
+-        # wrapt
+-    ],
+-)
+-
+-tree_py_test(
+-    name = "tree_benchmark",
+-    srcs = ["tree_benchmark.py"],
+-    deps = [
+-        ":tree",
+-    ],
+-)
+-
+-package_group(
+-    name = "compat_users",
+-    packages = COMPAT_USERS,
+-)
+-
+-py_library(
+-    name = "compat",
+-    srcs = [],  # compat.py
+-    srcs_version = "PY2AND3",
+-    visibility = [
+-        ":compat_users",
+-    ],
+-    deps = [
+-        ":tree",  # build_cleaner:keep
+-    ],
+-)
+diff --git a/tree/CMakeLists.txt b/tree/CMakeLists.txt
+new file mode 100644
+index 0000000..5e7eb43
+--- /dev/null
++++ b/tree/CMakeLists.txt
+@@ -0,0 +1,113 @@
++# Version >= 3.12 required for new FindPython module
++# https://cmake.org/cmake/help/v3.12/release/3.12.html
++cmake_minimum_required (VERSION 3.12)
++project (tree LANGUAGES CXX)
++
++# Required for Python.h and python binding.
++find_package(Python3 COMPONENTS Interpreter Development)
++include_directories(SYSTEM ${Python3_INCLUDE_DIRS})
++if(Python3_VERSION VERSION_LESS "3.6.0")
++  message(FATAL_ERROR
++    "Python found ${Python3_VERSION} < 3.6.0")
++endif()
++
++# Use C++14 standard.
++set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ version selection")
++
++# Position-independent code is needed for Python extension modules.
++set(CMAKE_POSITION_INDEPENDENT_CODE ON)
++
++# Set default build type.
++if(NOT CMAKE_BUILD_TYPE)
++   set(CMAKE_BUILD_TYPE RELEASE
++       CACHE STRING "Choose the type of build: Debug Release."
++       FORCE)
++endif()
++message("Current build type is: ${CMAKE_BUILD_TYPE}")
++message("PROJECT_BINARY_DIR is: ${PROJECT_BINARY_DIR}")
++
++if (NOT (WIN32 OR MSVC))
++  if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
++    # Basic build for debugging (default).
++    # -Og enables optimizations that do not interfere with debugging.
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og")
++  endif()
++
++  if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
++    # Optimized release build: turn off debug runtime checks
++    # and turn on highest speed optimizations.
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -O3")
++  endif()
++endif()
++
++if(APPLE)
++  # On MacOS:
++  #   -undefined dynamic_lookup is necessary for pybind11 linking
++  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-everything -w -undefined dynamic_lookup")
++
++  # On MacOS, we need this so that CMake will use the right Python if the user
++  # has a virtual environment active
++  set (CMAKE_FIND_FRAMEWORK LAST)
++endif()
++
++# Fetch pybind to be able to use pybind11_add_module symbol.
++set(PYBIND_VER v2.6.2)
++include(FetchContent)
++FetchContent_Declare(
++  pybind11
++  GIT_REPOSITORY https://github.com/pybind/pybind11
++  GIT_TAG        ${PYBIND_VER}
++)
++if(NOT pybind11_POPULATED)
++    FetchContent_Populate(pybind11)
++    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
++    include_directories(${pybind11_INCLUDE_DIR})
++endif()
++
++# Needed to disable Abseil tests.
++set (BUILD_TESTING OFF)
++
++# Include abseil-cpp.
++set(ABSEIL_VER 20210324.2)
++include(ExternalProject)
++ExternalProject_Add(abseil-cpp
++  GIT_REPOSITORY    https://github.com/abseil/abseil-cpp.git
++  GIT_TAG           ${ABSEIL_VER}
++  PREFIX            ${CMAKE_SOURCE_DIR}/abseil-cpp
++  CMAKE_ARGS       -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/abseil-cpp
++                   -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
++                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
++                   -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
++                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
++                   -DCMAKE_POSITION_INDEPENDENT_CODE=${CMAKE_POSITION_INDEPENDENT_CODE}
++                   -DLIBRARY_OUTPUT_PATH=${CMAKE_SOURCE_DIR}/abseil-cpp/lib
++)
++ExternalProject_Get_Property(abseil-cpp install_dir)
++set(abseil_install_dir ${install_dir})
++include_directories (${abseil_install_dir}/include)
++
++
++# Define pybind11 tree module.
++pybind11_add_module(_tree tree.h tree.cc)
++add_dependencies(_tree abseil-cpp)
++
++if (WIN32 OR MSVC)
++    set(ABSEIL_LIB_PREF "absl")
++    set(LIB_SUFF "lib")
++else()
++    set(ABSEIL_LIB_PREF "libabsl")
++    set(LIB_SUFF "a")
++endif()
++
++# Link abseil static libs.
++# We don't use find_library here to force cmake to build abseil before linking.
++set(ABSEIL_LIBS int128 raw_hash_set raw_logging_internal strings throw_delegate)
++foreach(ABSEIL_LIB IN LISTS ABSEIL_LIBS)
++  target_link_libraries(_tree PRIVATE
++      "${abseil_install_dir}/lib/${ABSEIL_LIB_PREF}_${ABSEIL_LIB}.${LIB_SUFF}")
++endforeach()
++
++# Make the module private to tree package.
++set_target_properties(_tree PROPERTIES OUTPUT_NAME tree/_tree)
++
++
+diff --git a/tree/build_defs.bzl b/tree/build_defs.bzl
+deleted file mode 100644
+index 2e1d89a..0000000
+--- a/tree/build_defs.bzl
++++ /dev/null
+@@ -1,39 +0,0 @@
+-"""Open source rules for building the tree python extension."""
+-
+-load("@bazel_skylib//lib:collections.bzl", "collections")
+-
+-_SHARED_LIB_SUFFIX = {
+-    "//bazel:linux": ".so",
+-    "//bazel:apple": ".so",
+-    "//bazel:windows": ".dll",
+-}
+-
+-COMPAT_USERS = []
+-
+-def tree_py_extension(name, srcs, hdrs, copts, features, deps):
+-    for shared_lib_suffix in collections.uniq(_SHARED_LIB_SUFFIX.values()):
+-        shared_lib_name = name + shared_lib_suffix
+-        native.cc_binary(
+-            name = shared_lib_name,
+-            linkshared = 1,
+-            linkstatic = 1,
+-            srcs = srcs + hdrs,
+-            copts = copts,
+-            features = features,
+-            deps = deps,
+-        )
+-
+-    return native.py_library(
+-        name = name,
+-        data = select({
+-            platform: [name + shared_lib_suffix]
+-            for platform, shared_lib_suffix in _SHARED_LIB_SUFFIX.items()
+-        }),
+-    )
+-
+-def tree_py_test(name, srcs, deps):
+-    return native.py_test(
+-        name = name,
+-        srcs = srcs,
+-        deps = deps,
+-    )
+diff --git a/tree/tree.cc b/tree/tree.cc
+index 26840da..4db60f8 100644
+--- a/tree/tree.cc
++++ b/tree/tree.cc
+@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================*/
+-#include "tree/tree.h"
++#include "tree.h"
+ 
+ #include <memory>
+ #include <string>
+@@ -22,7 +22,7 @@ limitations under the License.
+ #include "absl/memory/memory.h"
+ #include "absl/strings/str_cat.h"
+ #include "absl/strings/string_view.h"
+-#include "pybind11/pybind11.h"
++#include <pybind11/pybind11.h>
+ 
+ #ifdef LOG
+ #define LOG_WARNING(w) LOG(WARNING) << w;
+diff --git a/tree/tree.h b/tree/tree.h
+index ab3fc59..b95ea06 100644
+--- a/tree/tree.h
++++ b/tree/tree.h
+@@ -17,7 +17,8 @@ limitations under the License.
+ #define TREE_H_
+ 
+ #include <memory>
+-#include <Python.h>
++
++#include <pybind11/pybind11.h>
+ 
+ namespace tree {
+ 
+-- 
+2.25.1
+

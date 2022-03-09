@@ -1,0 +1,31 @@
+From 42e87fda83278e2eb32bb55225e1d1511e77c10c Mon Sep 17 00:00:00 2001
+From: Gregory Thornton <gregthornton@google.com>
+Date: Thu, 26 Aug 2021 04:28:31 -0700
+Subject: [PATCH 16/20] Internal Changes.
+
+PiperOrigin-RevId: 393094378
+---
+ tree/tree_test.py | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/tree/tree_test.py b/tree/tree_test.py
+index d6c9566..0f9f2b0 100644
+--- a/tree/tree_test.py
++++ b/tree/tree_test.py
+@@ -800,13 +800,6 @@ class NestTest(parameterized.TestCase):
+     input_tree = {"a": "A", "b": "B", "c": "C"}
+     shallow_tree = {"a": 1, "c": 2}
+ 
+-    with self.assertRaisesWithLiteralMatch(  # pylint: disable=g-error-prone-assert-raises
+-        ValueError,
+-        tree._STRUCTURES_HAVE_MISMATCHING_LENGTHS.format(
+-            input_length=len(input_tree),
+-            shallow_length=len(shallow_tree))):
+-      get_paths_and_values(shallow_tree, input_tree)
+-
+     # Using non-iterable elements.
+     input_tree = [0]
+     shallow_tree = 9
+-- 
+2.25.1
+

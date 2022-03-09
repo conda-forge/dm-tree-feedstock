@@ -1,0 +1,25 @@
+From e37ad4007d11a7a945cdb87fa89bbeeea6a5c235 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Thomas=20K=C3=B6ppe?= <tkoeppe@google.com>
+Date: Fri, 25 Jun 2021 05:29:20 -0700
+Subject: [PATCH 08/20] Remove accidentally included, invalid dependency.
+
+PiperOrigin-RevId: 381451361
+---
+ tree/BUILD | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/tree/BUILD b/tree/BUILD
+index 0a533d9..d2a483f 100644
+--- a/tree/BUILD
++++ b/tree/BUILD
+@@ -21,7 +21,6 @@ py_library(
+     visibility = ["//visibility:public"],
+     deps = [
+         ":_tree",  # build_cleaner:keep
+-        ":experimental",
+         ":sequence",
+     ],
+ )
+-- 
+2.25.1
+

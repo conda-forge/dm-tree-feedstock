@@ -1,0 +1,60 @@
+From db61b8b8e33458910297c6a3355d93f20c64a7e2 Mon Sep 17 00:00:00 2001
+From: Sergei Lebedev <slebedev@google.com>
+Date: Mon, 12 Apr 2021 06:55:18 -0700
+Subject: [PATCH 01/20] Internal change
+
+PiperOrigin-RevId: 367993598
+---
+ tree/BUILD          | 11 +++++++++--
+ tree/build_defs.bzl |  2 +-
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/tree/BUILD b/tree/BUILD
+index 405f8a0..a457e14 100644
+--- a/tree/BUILD
++++ b/tree/BUILD
+@@ -3,7 +3,7 @@
+ 
+ load(
+     "//tree:build_defs.bzl",
+-    "COMPAT_VISIBILITY",
++    "COMPAT_USERS",
+     "tree_py_extension",
+     "tree_py_test",
+ )
+@@ -62,11 +62,18 @@ tree_py_test(
+     ],
+ )
+ 
++package_group(
++    name = "compat_users",
++    packages = COMPAT_USERS,
++)
++
+ py_library(
+     name = "compat",
+     srcs = [],  # compat.py
+     srcs_version = "PY2AND3",
+-    visibility = COMPAT_VISIBILITY,
++    visibility = [
++        ":compat_users",
++    ],
+     deps = [
+         ":tree",
+     ],
+diff --git a/tree/build_defs.bzl b/tree/build_defs.bzl
+index 5687aef..2e1d89a 100644
+--- a/tree/build_defs.bzl
++++ b/tree/build_defs.bzl
+@@ -8,7 +8,7 @@ _SHARED_LIB_SUFFIX = {
+     "//bazel:windows": ".dll",
+ }
+ 
+-COMPAT_VISIBILITY = []
++COMPAT_USERS = []
+ 
+ def tree_py_extension(name, srcs, hdrs, copts, features, deps):
+     for shared_lib_suffix in collections.uniq(_SHARED_LIB_SUFFIX.values()):
+-- 
+2.25.1
+

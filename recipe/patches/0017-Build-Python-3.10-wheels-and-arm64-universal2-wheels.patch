@@ -1,0 +1,367 @@
+From b452e5c2743e7489b4ba7f16ecd51c516d7cd8e3 Mon Sep 17 00:00:00 2001
+From: Saran Tunyasuvunakool <stunya@google.com>
+Date: Mon, 20 Dec 2021 13:25:38 -0800
+Subject: [PATCH 17/20] Build Python 3.10 wheels, and arm64 + universal2 wheels
+ for macOS.
+
+Closes #69
+Closes #71
+
+PiperOrigin-RevId: 417467863
+---
+ .github/workflows/build.yml        | 123 +++++++++++++++++++++++++++++
+ .github/workflows/build_wheels.yml |  65 ---------------
+ .github/workflows/ci.yml           |  61 --------------
+ setup.py                           |  15 ++++
+ tree/CMakeLists.txt                |  21 +++--
+ 5 files changed, 152 insertions(+), 133 deletions(-)
+ create mode 100644 .github/workflows/build.yml
+ delete mode 100644 .github/workflows/build_wheels.yml
+ delete mode 100644 .github/workflows/ci.yml
+
+diff --git a/.github/workflows/build.yml b/.github/workflows/build.yml
+new file mode 100644
+index 0000000..c9b9df2
+--- /dev/null
++++ b/.github/workflows/build.yml
+@@ -0,0 +1,123 @@
++name: build
++
++on:
++  push:
++    branches: [master]
++  pull_request:
++    branches: [master]
++  release:
++    types: [created]
++  workflow_dispatch:
++
++jobs:
++  sdist:
++    name: sdist
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v2
++      - uses: actions/setup-python@v2
++      - name: Create sdist
++        run: python setup.py sdist
++        shell: bash
++      - name: Directory listing
++        run: ls -lh dist/dm-tree*.tar.gz
++        shell: bash
++      - uses: actions/upload-artifact@v2
++        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.action == 'created') }}
++        with:
++          name: dm-tree-${{ github.workflow }}-${{ github.run_number }}
++          path: dist/dm-tree*.tar.gz
++
++  wheel-x86_64:
++    strategy:
++      matrix:
++        os: [windows-latest, ubuntu-latest, macos-latest]
++        python_tag: [cp36, cp37, cp38, cp39, cp310]
++        include:
++          - os: windows-latest
++            os_tag: win_amd64
++          - os: ubuntu-latest
++            os_tag: manylinux_x86_64
++          - os: macos-latest
++            os_tag: macosx_x86_64
++
++    name: "wheel: ${{ matrix.python_tag }}-${{ matrix.os_tag }}"
++    runs-on: ${{ matrix.os }}
++
++    steps:
++      - uses: actions/checkout@v2
++      - uses: actions/setup-python@v2
++
++      - name: Install prerequisites
++        run: |
++          set -xe
++          pwd
++          python --version
++          python -m pip install --upgrade pip setuptools wheel
++          python -m pip install cibuildwheel
++        shell: bash
++
++      - name: Build and test
++        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
++        env:
++          CIBW_BUILD: ${{ matrix.python_tag }}-${{ matrix.os_tag }}
++          CIBW_BUILD_VERBOSITY: 3
++          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.6"
++          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux2010_x86_64
++          CIBW_TEST_REQUIRES: pytest
++          CIBW_BEFORE_TEST: pip install -r requirements-test.txt
++          CIBW_TEST_COMMAND: pytest --pyargs tree
++        shell: bash
++
++      - name: Directory listing
++        run: ls -lh wheelhouse/dm_tree*.whl
++        shell: bash
++
++      - uses: actions/upload-artifact@v2
++        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.action == 'created') }}
++        with:
++          name: dm-tree-${{ github.workflow }}-${{ github.run_number }}
++          path: wheelhouse/dm_tree*.whl
++
++  wheel-apple_silicon:
++    strategy:
++      matrix:
++        python_tag: [cp38, cp39, cp310]
++        macos_arch: [arm64, universal2]
++
++    name: "wheel: ${{ matrix.python_tag }}-macosx_${{ matrix.macos_arch }}"
++    runs-on: macos-latest
++
++    steps:
++      - uses: actions/checkout@v2
++      - uses: actions/setup-python@v2
++
++      - name: Install prerequisites
++        run: |
++          set -xe
++          pwd
++          python --version
++          python -m pip install --upgrade pip setuptools wheel
++          python -m pip install cibuildwheel
++        shell: bash
++
++      - name: Build and test
++        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
++        env:
++          CIBW_BUILD: ${{ matrix.python_tag }}-macosx_${{ matrix.macos_arch }}
++          CIBW_BUILD_VERBOSITY: 3
++          CIBW_ARCHS_MACOS: ${{ matrix.macos_arch }}
++          CIBW_TEST_REQUIRES: pytest
++          CIBW_BEFORE_TEST: pip install -r requirements-test.txt
++          CIBW_TEST_COMMAND: "if [ \"${CIBW_ARCHS_MACOS}\" = \"universal2\" ]; then pytest --pyargs tree; fi"
++        shell: bash
++
++      - name: Directory listing
++        run: ls -lh wheelhouse/dm_tree*.whl
++        shell: bash
++
++      - uses: actions/upload-artifact@v2
++        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.action == 'created') }}
++        with:
++          name: dm-tree-${{ github.workflow }}-${{ github.run_number }}
++          path: wheelhouse/dm_tree*.whl
+diff --git a/.github/workflows/build_wheels.yml b/.github/workflows/build_wheels.yml
+deleted file mode 100644
+index c9e787d..0000000
+--- a/.github/workflows/build_wheels.yml
++++ /dev/null
+@@ -1,65 +0,0 @@
+-name: build_wheels
+-
+-on:
+- # push:
+- #   branches: [ master ]
+- # pull_request:
+- #   branches: [ master ]
+- release:
+-    types: [created]
+-
+-jobs:
+-  build_wheels:
+-    name: Build wheels on ${{ matrix.os }}
+-    runs-on: ${{ matrix.os }}
+-    strategy:
+-      matrix:
+-        os: [windows-latest, ubuntu-latest, macos-latest]
+-    env:
+-      CIBW_PROJECT_REQUIRES_PYTHON: ">=3.6"
+-      OS: ${{ matrix.os }}
+-
+-    steps:
+-      - uses: actions/checkout@v2
+-      - uses: actions/setup-python@v2
+-
+-      - name: Install
+-        run: |
+-          set -xe
+-          pwd
+-          python --version
+-          python -m pip install --upgrade pip setuptools wheel
+-          python -m pip install cibuildwheel
+-        shell: bash
+-
+-      - name: Build wheels (macosx & win)
+-        if: ${{ matrix.os != 'ubuntu-latest' }}
+-        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
+-        env:
+-          CIBW_BUILD: "cp3*-win* cp3*-macosx*"
+-          CIBW_SKIP: "*-win32"
+-        shell: bash
+-
+-      - name: Build wheels (manylinux_2_24)
+-        if: ${{ matrix.os == 'ubuntu-latest' }}
+-        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
+-        env:
+-          CIBW_BUILD: cp3*-manylinux*
+-          CIBW_SKIP: "*-manylinux_i686"
+-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_24
+-          CIBW_MANYLINUX_PYPY_X86_64_IMAGE: manylinux_2_24
+-        shell: bash
+-
+-      - name: Build wheels (manylinux2014)
+-        if: ${{ matrix.os == 'ubuntu-latest' }}
+-        run: set -xe && python -m cibuildwheel --output-dir wheelhouse
+-        env:
+-          CIBW_BUILD: cp3*-manylinux*
+-          CIBW_SKIP: "*-manylinux_i686"
+-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+-          CIBW_MANYLINUX_PYPY_X86_64_IMAGE: manylinux2014
+-        shell: bash
+-
+-      - name: List wheels
+-        run: set -xe && ls -la wheelhouse
+-        shell: bash
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+deleted file mode 100644
+index 0962ef7..0000000
+--- a/.github/workflows/ci.yml
++++ /dev/null
+@@ -1,61 +0,0 @@
+-name: ci
+-
+-on:
+-  push:
+-    branches: ["master"]
+-  pull_request:
+-    branches: ["master"]
+-  release:
+-    types: [created]
+-  workflow_dispatch:
+-
+-jobs:
+-  build-and-test:
+-    name: "Python ${{ matrix.python-version }} on ${{ matrix.os }}"
+-    runs-on: "${{ matrix.os }}"
+-
+-    strategy:
+-      matrix:
+-        python-version: ["3.6", "3.7", "3.8", "3.9"]
+-        os: [windows-latest, ubuntu-latest, macos-latest]
+-
+-    steps:
+-      - uses: "actions/checkout@v2"
+-      - uses: "actions/setup-python@v2"
+-        with:
+-            python-version: "${{ matrix.python-version }}"
+-      - name: "Install dependencies"
+-        run: |
+-          set -xe
+-          python -m pip install --upgrade pip setuptools wheel
+-          python -m pip install pytest
+-          python -m pip install -r requirements-test.txt
+-        shell: bash
+-      - name: "Build"
+-        run: |
+-          if [[ `uname` == "Darwin" ]]
+-          then
+-            echo "build --macos_minimum_os=10.9" >> ${HOME}/.bazelrc
+-          fi
+-          set -xe
+-          python -VV
+-          python setup.py sdist
+-          pip wheel --verbose --no-deps --no-clean dist/dm-tree*.tar.gz
+-          pip install dm_tree*.whl
+-        shell: bash
+-      - name: "Run tests"
+-        run: |
+-          set -xe
+-          # Change directory to avoid importing tree from repo root.
+-          mkdir tests && pushd tests
+-          python -m pytest -vv --pyargs tree
+-          popd
+-        shell: bash
+-      - uses: actions/upload-artifact@v2
+-        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.action == 'created') }}
+-        with:
+-          path: dm_tree*.whl
+-      - uses: actions/upload-artifact@v2
+-        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.action == 'created') }}
+-        with:
+-          path: dist/dm-tree*.tar.gz
+diff --git a/setup.py b/setup.py
+index 7063f42..5b8a195 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,9 +15,11 @@
+ """Setup for pip package."""
+ 
+ import os
++import platform
+ import shutil
+ import subprocess
+ import sys
++import sysconfig
+ 
+ import setuptools
+ from setuptools.command import build_ext
+@@ -85,10 +87,23 @@ class BuildCMakeExtension(build_ext.build_ext):
+         os.path.dirname(self.get_ext_fullpath(ext.name)))
+     build_cfg = 'Debug' if self.debug else 'Release'
+     cmake_args = [
++        f'-DPython3_ROOT_DIR={sys.prefix}',
+         f'-DPython3_EXECUTABLE={sys.executable}',
+         f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extension_dir}',
+         f'-DCMAKE_BUILD_TYPE={build_cfg}'
+     ]
++    if platform.system() != 'Windows':
++      cmake_args.extend([
++          f'-DPython3_LIBRARY={sysconfig.get_paths()["stdlib"]}',
++          f'-DPython3_INCLUDE_DIR={sysconfig.get_paths()["include"]}',
++      ])
++    if platform.system() == 'Darwin' and os.environ.get('ARCHFLAGS'):
++      osx_archs = []
++      if '-arch x86_64' in os.environ['ARCHFLAGS']:
++        osx_archs.append('x86_64')
++      if '-arch arm64' in os.environ['ARCHFLAGS']:
++        osx_archs.append('arm64')
++      cmake_args.append(f'-DCMAKE_OSX_ARCHITECTURES={";".join(osx_archs)}')
+     os.makedirs(self.build_temp, exist_ok=True)
+     subprocess.check_call(
+         ['cmake', ext.source_dir] + cmake_args, cwd=self.build_temp)
+diff --git a/tree/CMakeLists.txt b/tree/CMakeLists.txt
+index 5e7eb43..8f9946c 100644
+--- a/tree/CMakeLists.txt
++++ b/tree/CMakeLists.txt
+@@ -70,17 +70,24 @@ set (BUILD_TESTING OFF)
+ # Include abseil-cpp.
+ set(ABSEIL_VER 20210324.2)
+ include(ExternalProject)
++set(ABSEIL_CMAKE_ARGS
++    "-DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/abseil-cpp"
++    "-DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}"
++    "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
++    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
++    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
++    "-DCMAKE_POSITION_INDEPENDENT_CODE=${CMAKE_POSITION_INDEPENDENT_CODE}"
++    "-DLIBRARY_OUTPUT_PATH=${CMAKE_SOURCE_DIR}/abseil-cpp/lib")
++if(DEFINED CMAKE_OSX_ARCHITECTURES)
++    set(ABSEIL_CMAKE_ARGS
++        ${ABSEIL_CMAKE_ARGS}
++        "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
++endif()
+ ExternalProject_Add(abseil-cpp
+   GIT_REPOSITORY    https://github.com/abseil/abseil-cpp.git
+   GIT_TAG           ${ABSEIL_VER}
+   PREFIX            ${CMAKE_SOURCE_DIR}/abseil-cpp
+-  CMAKE_ARGS       -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/abseil-cpp
+-                   -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+-                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+-                   -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+-                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+-                   -DCMAKE_POSITION_INDEPENDENT_CODE=${CMAKE_POSITION_INDEPENDENT_CODE}
+-                   -DLIBRARY_OUTPUT_PATH=${CMAKE_SOURCE_DIR}/abseil-cpp/lib
++  CMAKE_ARGS        ${ABSEIL_CMAKE_ARGS}
+ )
+ ExternalProject_Get_Property(abseil-cpp install_dir)
+ set(abseil_install_dir ${install_dir})
+-- 
+2.25.1
+

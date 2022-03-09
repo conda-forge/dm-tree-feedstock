@@ -1,0 +1,33 @@
+From f38310533975d33e5b6bc68d8d80a5a9d121a7ec Mon Sep 17 00:00:00 2001
+From: Alexey Guseynov <kibergus@google.com>
+Date: Sat, 26 Feb 2022 00:24:56 -0800
+Subject: [PATCH 19/20] Support keyword only attrs based structures.
+
+PiperOrigin-RevId: 431107975
+---
+ tree/sequence.py | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/tree/sequence.py b/tree/sequence.py
+index 55e0b66..6c24b41 100644
+--- a/tree/sequence.py
++++ b/tree/sequence.py
+@@ -91,7 +91,14 @@ def _sequence_like(instance, args):
+     else:
+       instance_type = type(instance)
+     try:
+-      return instance_type(*args)
++      if _is_attrs(instance):
++        return instance_type(
++            **{
++                attr.name: arg
++                for attr, arg in zip(instance_type.__attrs_attrs__, args)
++            })
++      else:
++        return instance_type(*args)
+     except Exception as e:
+       raise TypeError(
+           f"Couldn't traverse {instance!r} with arguments {args}") from e
+-- 
+2.25.1
+

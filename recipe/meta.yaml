@@ -9,17 +9,31 @@ source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
   sha256: 6776404b23b4522c01012ffb314632aba092c9541577004ab153321e87da439a
   patches:
-#     - patches/0001-Contain-bazel-root.patch
-    - patches/upstream-pr-58.patch
-    - patches/upstream-pr-72.patch
+    - patches/0001-Internal-change.patch
+    - patches/0002-Removed-a-dependency-on-six.patch
+    - patches/0003-Internal-change.patch
+    - patches/0004-Change-implementation-of-map_structure_with_path_up_.patch
+    - patches/0005-Add-recipes-with-doctests.-These-will-help-implement.patch
+    - patches/0006-Add-more-tests-for-map_structure_up_to.patch
+    - patches/0007-Small-refactor-to-make-planned-implementation-change.patch
+    - patches/0008-Remove-accidentally-included-invalid-dependency.patch
+    - patches/0009-Internal-change.patch
+    - patches/0010-Add-tree-recipe-to-broadcast-a-value-across-a-refere.patch
+    - patches/0011-Update-docs-copyright-year-dynamically.patch
+    - patches/0012-Migrate-to-CMake-build-system-and-set-up-cibuildwhee.patch
+    - patches/0013-Removed-unused-imports.patch
+    - patches/0014-Add-test-to-cover-mapping-custom-classes-with-paths.patch
+    - patches/0015-Temporarily-remove-optimisation-which-is-causing-iss.patch
+    - patches/0016-Internal-Changes.patch
+    - patches/0017-Build-Python-3.10-wheels-and-arm64-universal2-wheels.patch
+    - patches/0018-Improve-error-message.patch
+    - patches/0019-Support-keyword-only-attrs-based-structures.patch
+    - patches/0020-Removed-pytype-disable-not-supported-yet-as-pytype-d.patch
 
 build:
   number: 1
   script: {{ PYTHON }} -m pip install . --no-deps -vv
-  # script: '"%RECIPE_DIR%\windows.bat" "{{ PYTHON }}"'  # [win]
 
-
-# Need these up here for conda-smithy to handle them properly.
 requirements:
   build:
     - {{ compiler('c') }}
@@ -30,15 +44,11 @@ requirements:
     - cmake
     - make
     - setuptools
-   # - bazel <4
-   # - m2-patch  # [win]
   host:
     - pip
     - python
-    - six >=1.12.0 # needed because we can install by "python setup.py install" which has no --no-deps switch
   run:
     - python
-    - six >=1.12.0
 
 test:
   imports:
