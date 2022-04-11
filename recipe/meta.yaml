@@ -8,8 +8,6 @@ package:
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
   sha256: 30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a
-  patches:
-    - patches/0001-Contain-bazel-root.patch
 
 build:
   number: 0
@@ -25,15 +23,14 @@ requirements:
     - python                                 # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
     - python
-    - bazel <4
-    - m2-patch  # [win]
+    - cmake
+    - make
+    - setuptools
   host:
     - pip
     - python
-    - six >=1.12.0 # needed because we can install by "python setup.py install" which has no --no-deps switch
   run:
     - python
-    - six >=1.12.0
 
 test:
   imports:
