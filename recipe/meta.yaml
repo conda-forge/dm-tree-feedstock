@@ -13,7 +13,9 @@ source:
 
 build:
   number: 1
-  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  script:
+    - export CMAKE_SYSTEM_PROCESSOR=ppc  # [ppc64le]
+    - {{ PYTHON }} -m pip install . --no-deps -vv
 
 
 # Need these up here for conda-smithy to handle them properly.
