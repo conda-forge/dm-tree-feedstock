@@ -1,5 +1,5 @@
 {% set name = "dm-tree" %}
-{% set version = "0.1.6" %}
+{% set version = "0.1.7" %}
 
 package:
   name: {{ name|lower }}
@@ -7,12 +7,12 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
-  sha256: 6776404b23b4522c01012ffb314632aba092c9541577004ab153321e87da439a
+  sha256: 30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a
   patches:
     - patches/0001-Contain-bazel-root.patch
 
 build:
-  number: 1
+  number: 0
   script: {{ PYTHON }} -m pip install . --no-deps -vv  # [not win]
   script: '"%RECIPE_DIR%\windows.bat" "{{ PYTHON }}"'  # [win]
 
