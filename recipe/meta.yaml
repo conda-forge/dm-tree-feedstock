@@ -32,8 +32,7 @@ source:
 
 build:
   number: 2
-  script: {{ PYTHON }} -m pip install . --no-deps -vv  # [not win]
-  script: '"%RECIPE_DIR%\windows.bat" "{{ PYTHON }}"'  # [win]
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 requirements:
   build:
