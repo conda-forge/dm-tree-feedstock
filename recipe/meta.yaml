@@ -32,18 +32,15 @@ requirements:
     - python
 
 test:
+  imports:
+    - tree
   commands:
-    - pip install git+https://github.com/pybind/pybind11.git
     - python -m unittest tree.tree_test tree.tree_benchmark
   requires:
     - attrs
     - absl-py
     - numpy
     - wrapt
-    - pybind11 ==2.9.2
-    - git
-    - pip
-    - python
 
 about:
   home: https://github.com/deepmind/tree
