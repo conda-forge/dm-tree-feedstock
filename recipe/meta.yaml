@@ -41,6 +41,7 @@ test:
     - absl-py
     - numpy
     - wrapt
+    - pybind11 ==2.9.2
 
 about:
   home: https://github.com/deepmind/tree
