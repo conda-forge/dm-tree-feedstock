@@ -1,0 +1,5 @@
+--- a/tree/tree/CMakeLists.txt
++++ b/tree/tree/CMakeLists.txt
+@@ -54,1 +54,1 @@ set(PYBIND_VER
+-set(PYBIND_VER v2.6.2)
++set(PYBIND_VER v2.9.2)
