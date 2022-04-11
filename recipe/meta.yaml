@@ -1,5 +1,5 @@
 {% set name = "dm-tree" %}
-{% set version = "0.1.6" %}
+{% set version = "0.1.7" %}
 
 package:
   name: {{ name|lower }}
@@ -7,14 +7,11 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
-  sha256: 6776404b23b4522c01012ffb314632aba092c9541577004ab153321e87da439a
-  patches:
-    - patches/0001-Contain-bazel-root.patch
+  sha256: 30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a
 
 build:
-  number: 1
-  script: {{ PYTHON }} -m pip install . --no-deps -vv  # [not win]
-  script: '"%RECIPE_DIR%\windows.bat" "{{ PYTHON }}"'  # [win]
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 
 # Need these up here for conda-smithy to handle them properly.
@@ -25,15 +22,14 @@ requirements:
     - python                                 # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
     - python
-    - bazel <4
-    - m2-patch  # [win]
+    - cmake
+    - make
+    - setuptools
   host:
     - pip
     - python
-    - six >=1.12.0 # needed because we can install by "python setup.py install" which has no --no-deps switch
   run:
     - python
-    - six >=1.12.0
 
 test:
   imports:
