@@ -3,3 +3,6 @@
 @@ -54,1 +54,1 @@ set(PYBIND_VER
 -set(PYBIND_VER v2.6.2)
 +set(PYBIND_VER v2.9.2)
+@@ -71,1 +71,1 @@ set(ABSEIL_VER
+-set(ABSEIL_VER 20210324.2)
++set(ABSEIL_VER 20211102.0)
