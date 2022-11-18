@@ -8,10 +8,14 @@ package:
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
   sha256: 30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a
+  patches:
+    - patches/fetchpybind.diff
 
 build:
-  number: 0
-  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  number: 1
+  script:
+    - export CMAKE_SYSTEM_PROCESSOR=ppc  # [ppc64le]
+    - {{ PYTHON }} -m pip install . --no-deps -vv
 
 
 # Need these up here for conda-smithy to handle them properly.
