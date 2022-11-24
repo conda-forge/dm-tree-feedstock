@@ -7,9 +7,6 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
-  patches:
-    - patches/0001-Contain-bazel-root.patch
-    - patches/0002-cxxopt-for-osx-sysroot.patch   # [osx]
   sha256: 30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a
 
 build:
@@ -23,16 +20,13 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - python
-    - bazel
-    - m2-patch  # [win]
-    - patch     # [not win]
+    - cmake
+    - make
   host:
     - pip
     - python
-    - six >=1.12.0 # needed because we can install by "python setup.py install" which has no --no-deps switch
   run:
     - python
-    - six >=1.12.0
 
 test:
   imports:
