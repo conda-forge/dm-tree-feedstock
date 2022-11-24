@@ -21,7 +21,10 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake
-    - make
+    - python
+    - pip
+    - setuptools
+    - wheel
   host:
     - python
     - pip
