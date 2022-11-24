@@ -12,6 +12,7 @@ source:
 build:
   number: 0
   skip: true   #[ppc64le]
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 
 # Need these up here for conda-smithy to handle them properly.
@@ -19,12 +20,13 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - python
     - cmake
     - make
   host:
-    - pip
     - python
+    - pip
+    - setuptools
+    - wheel
   run:
     - python
 
