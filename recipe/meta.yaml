@@ -38,6 +38,7 @@ test:
     - pip check
     - python -m unittest tree.tree_test tree.tree_benchmark
   requires:
+    - pip
     - attrs
     - absl-py
     - numpy
