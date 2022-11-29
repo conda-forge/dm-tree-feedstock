@@ -22,7 +22,8 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - make  # [not win]
-    - git
+    - git  # [not win]
+    - m2-git # [win]
   host:
     - python
     - pip
