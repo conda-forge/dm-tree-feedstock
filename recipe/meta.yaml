@@ -35,6 +35,7 @@ test:
   imports:
     - tree
   commands:
+    - pip check
     - python -m unittest tree.tree_test tree.tree_benchmark
   requires:
     - attrs
