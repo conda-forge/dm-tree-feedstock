@@ -40,10 +40,10 @@ test:
     - python -m unittest tree.tree_test tree.tree_benchmark
   requires:
     - pip
-    - attrs
-    - absl-py
-    - numpy
-    - wrapt
+    - attrs >=18.2.0
+    - absl-py >=0.6.1
+    - numpy >=1.15.4
+    - wrapt >=1.11.2
 
 about:
   home: https://github.com/deepmind/tree
