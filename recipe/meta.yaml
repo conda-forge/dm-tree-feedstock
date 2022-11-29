@@ -22,6 +22,7 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - make
+    - git
   host:
     - python
     - pip
