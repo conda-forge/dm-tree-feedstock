@@ -8,10 +8,12 @@ package:
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
   sha256: 30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a
+  patches:
+    - patches/0003-remove-pybind-fetch.patch
 
 build:
-  number: 0
-  skip: true   #[ppc64le]
+  number: 1
+  skip: true  # [ppc64le or s390x]
   script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 
@@ -22,13 +24,14 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - make  # [not win]
-    - git  # [not win]
-    - m2-git # [win]
+    - patch  # [not win]
+    - m2-patch # [win]
   host:
     - python
     - pip
     - setuptools
     - wheel
+    - pybind11
   run:
     - python
 
