@@ -11,7 +11,11 @@ source:
 
 build:
   number: 0
-  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  script: 
+    - {{ PYTHON }} -m pip install . --no-deps -vv  # [target_platform != 'ppc64le']
+    - export CMAKE_SYSTEM_PROCESSOR=powerpc64le && {{ PYTHON }} -m pip install . --no-deps -vv  # [target_platform == 'ppc64le']
+
+    
 
 
 # Need these up here for conda-smithy to handle them properly.
@@ -28,7 +32,6 @@ requirements:
   host:
     - pip
     - python
-    - libabseil
   run:
     - python
 
@@ -40,7 +43,6 @@ test:
   requires:
     - attrs
     - absl-py
-    - libabseil
     - numpy
     - wrapt
 
