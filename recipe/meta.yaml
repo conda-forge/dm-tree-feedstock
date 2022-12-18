@@ -1,5 +1,5 @@
 {% set name = "dm-tree" %}
-{% set version = "0.1.7" %}
+{% set version = "0.1.8" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
-  sha256: 30fec8aca5b92823c0e796a2f33b875b4dccd470b57e91e6c542405c5f77fd2a
+  sha256: 0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430
 
 build:
   number: 0
