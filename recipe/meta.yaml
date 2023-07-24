@@ -7,6 +7,9 @@ package:
 source:
   url: https://pypi.io/packages/source/d/dm-tree/dm-tree-{{ version }}.tar.gz
   sha256: 0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430
+  patches:
+    - patches/0001-don-t-rebuild-abseil.patch
+    - patches/0002-don-t-fetch-pybind11.patch
 
 build:
   number: 0
@@ -27,6 +30,8 @@ requirements:
   host:
     - pip
     - python
+    - libabseil
+    - pybind11
   run:
     - python
 
