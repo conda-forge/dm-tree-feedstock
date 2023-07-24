@@ -1,12 +1,11 @@
-{% set name = "dm-tree" %}
 {% set version = "0.1.8" %}
 
 package:
-  name: {{ name|lower }}
+  name: dm-tree
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dm-tree-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/d/dm-tree/dm-tree-{{ version }}.tar.gz
   sha256: 0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430
 
 build:
