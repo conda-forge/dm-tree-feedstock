@@ -38,13 +38,14 @@ requirements:
 test:
   imports:
     - tree
-  commands:
-    - python -m unittest tree.tree_test tree.tree_benchmark
   requires:
+    - pytest
     - attrs
     - absl-py
-    - numpy
+    - numpy *
     - wrapt
+  commands:
+    - pytest --pyargs tree
 
 about:
   home: https://github.com/deepmind/tree
