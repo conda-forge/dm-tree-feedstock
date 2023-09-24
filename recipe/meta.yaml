@@ -12,7 +12,7 @@ source:
     - patches/0002-don-t-fetch-pybind11.patch
 
 build:
-  number: 1
+  number: 2
   script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 
