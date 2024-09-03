@@ -12,7 +12,7 @@ source:
     - patches/0002-don-t-fetch-pybind11.patch
 
 build:
-  number: 4
+  number: 5
   script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 
@@ -20,6 +20,7 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
     - {{ compiler('cxx') }}
     - python                                 # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
@@ -32,6 +33,7 @@ requirements:
     - python
     - libabseil
     - pybind11
+    - setuptools
   run:
     - python
 
