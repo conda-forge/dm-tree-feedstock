@@ -33,6 +33,7 @@ requirements:
     - python
     - libabseil
     - pybind11
+    - setuptools
   run:
     - python
 
