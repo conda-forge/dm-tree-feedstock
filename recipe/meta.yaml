@@ -51,8 +51,10 @@ test:
     - tree
   requires:
     - pytest
+    - pip
   commands:
     - pytest --pyargs tree
+    - pip check
 
 about:
   home: https://github.com/deepmind/tree
