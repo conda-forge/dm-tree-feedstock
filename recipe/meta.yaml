@@ -11,7 +11,8 @@ source:
 build:
   number: 0
   script: |
-    export CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON"
+    export CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON"  # [not win]
+    set "CMAKE_ARGS=-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON"  # [win]
     {{ PYTHON }} -m pip install . --no-deps -vv
   skip: true  # [py<310]
 
