@@ -1,0 +1,14 @@
+diff --git a/setup.py b/setup.py
+index e42ac11..1eec5b1 100644
+--- a/setup.py
++++ b/setup.py
+@@ -84,6 +84,9 @@ class BuildCMakeExtension(build_ext.build_ext):
+         f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extension_dir}',
+         f'-DCMAKE_BUILD_TYPE={build_cfg}'
+     ]
++    if 'CMAKE_ARGS' in os.environ:
++        cmake_args.extend(os.environ['CMAKE_ARGS'].split())
++
+     if platform.system() != 'Windows':
+       cmake_args.extend([
+           f'-DPython3_LIBRARY={sysconfig.get_paths()["stdlib"]}',
