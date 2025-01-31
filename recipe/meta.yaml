@@ -7,12 +7,11 @@ package:
 source:
   url: https://pypi.org/packages/source/d/dm-tree/dm_tree-{{ version }}.tar.gz
   sha256: a4c7db3d3935a5a2d5e4b383fc26c6b0cd6f78c6d4605d3e7b518800ecd5342b
-  patches:
-    - patches/0001-don-t-rebuild-abseil.patch
-    - patches/0002-don-t-fetch-pybind11.patch
 
 build:
   number: 0
+  script_env:
+    - CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON"
   script: {{ PYTHON }} -m pip install . --no-deps -vv
   skip: true  # [py<310]
 
