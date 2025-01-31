@@ -10,9 +10,9 @@ source:
 
 build:
   number: 0
-  script_env:
-    - CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON;-DCMAKE_CXX_STANDARD=17;-DUSE_SYSTEM_PYBIND11=ON"
-  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  script: |
+    export CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON"
+    {{ PYTHON }} -m pip install . --no-deps -vv
   skip: true  # [py<310]
 
 
