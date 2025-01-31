@@ -1,18 +1,18 @@
-{% set version = "0.1.8" %}
+{% set version = "0.1.9" %}
 
 package:
   name: dm-tree
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/d/dm-tree/dm-tree-{{ version }}.tar.gz
-  sha256: 0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430
+  url: https://pypi.org/packages/source/d/dm-tree/dm_tree-{{ version }}.tar.gz
+  sha256: a4c7db3d3935a5a2d5e4b383fc26c6b0cd6f78c6d4605d3e7b518800ecd5342b
   patches:
     - patches/0001-don-t-rebuild-abseil.patch
     - patches/0002-don-t-fetch-pybind11.patch
 
 build:
-  number: 6
+  number: 0
   script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 
