@@ -42,6 +42,9 @@ requirements:
     # https://github.com/google-deepmind/tree/blob/{{ version }}/setup.py
     - absl-py >=0.6.1
     - attrs >=18.2.0
+    # The upstream numpy constraint is complicated, but simply mirrors
+    # the available versions on numpy for each python version, so
+    # this is equivalent and simpler.
     - numpy >=1.21
     - wrapt >=1.11.2
 
