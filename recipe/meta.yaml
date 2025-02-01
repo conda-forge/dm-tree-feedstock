@@ -1,19 +1,22 @@
-{% set version = "0.1.8" %}
+{% set version = "0.1.9" %}
 
 package:
   name: dm-tree
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/d/dm-tree/dm-tree-{{ version }}.tar.gz
-  sha256: 0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430
+  url: https://pypi.org/packages/source/d/dm-tree/dm_tree-{{ version }}.tar.gz
+  sha256: a4c7db3d3935a5a2d5e4b383fc26c6b0cd6f78c6d4605d3e7b518800ecd5342b
   patches:
-    - patches/0001-don-t-rebuild-abseil.patch
-    - patches/0002-don-t-fetch-pybind11.patch
+    - patches/0001-allow-cmake-args-from-env.patch
 
 build:
-  number: 6
-  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  number: 0
+  script: |
+    export CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [not win]
+    set "CMAKE_ARGS=-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [win]
+    {{ PYTHON }} -m pip install . --no-deps -vv
+  skip: true  # [py<310]
 
 
 # Need these up here for conda-smithy to handle them properly.
@@ -36,18 +39,24 @@ requirements:
     - setuptools
   run:
     - python
+    # https://github.com/google-deepmind/tree/blob/{{ version }}/setup.py
+    - absl-py >=0.6.1
+    - attrs >=18.2.0
+    # The upstream numpy constraint is complicated, but simply mirrors
+    # the available versions on numpy for each python version, so
+    # this is equivalent and simpler.
+    - numpy >=1.21
+    - wrapt >=1.11.2
 
 test:
   imports:
     - tree
   requires:
     - pytest
-    - attrs
-    - absl-py
-    - numpy *
-    - wrapt
+    - pip
   commands:
     - pytest --pyargs tree
+    - pip check
 
 about:
   home: https://github.com/deepmind/tree
