@@ -43,10 +43,6 @@ requirements:
     - absl-py >=0.6.1
     - attrs >=18.2.0
     - numpy >=1.21
-    - numpy >=1.21.2  # [py>=310]
-    - numpy >=1.23.3  # [py>=311]
-    - numpy >=1.26.0  # [py>=312]
-    - numpy >=2.1.0  # [py>=313]
     - wrapt >=1.11.2
 
 test:
