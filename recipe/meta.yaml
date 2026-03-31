@@ -1,4 +1,4 @@
-{% set version = "0.1.9" %}
+{% set version = "0.1.10" %}
 
 package:
   name: dm-tree
@@ -6,12 +6,12 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/dm-tree/dm_tree-{{ version }}.tar.gz
-  sha256: a4c7db3d3935a5a2d5e4b383fc26c6b0cd6f78c6d4605d3e7b518800ecd5342b
+  sha256: 22f37b599e01cc3402a17f79c257a802aebd8d326de05b54657650845956208a
   patches:
     - patches/0001-allow-cmake-args-from-env.patch
 
 build:
-  number: 4
+  number: 0
   script: |
     export CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [not win]
     set "CMAKE_ARGS=-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [win]
