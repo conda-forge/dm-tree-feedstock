@@ -5,13 +5,13 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/dm-tree/dm_tree-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/d/dm-tree/dm_tree-{{ version }}.tar.gz
   sha256: 22f37b599e01cc3402a17f79c257a802aebd8d326de05b54657650845956208a
   patches:
     - patches/0001-allow-cmake-args-from-env.patch
 
 build:
-  number: 1
+  number: 2
   script: |
     export CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [not win]
     set "CMAKE_ARGS=-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [win]
